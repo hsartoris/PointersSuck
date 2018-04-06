@@ -28,6 +28,11 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name) 
 {
+
+  /*TO DO: parse file_name (likely with strtok_r)
+    run first word and pass following as args
+    limit file_name to 4kb
+  */
   char *fn_copy;
   tid_t tid;
 
@@ -208,15 +213,15 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
-  struct thread *t = thread_current ();
-  struct Elf32_Ehdr ehdr;
-  struct file *file = NULL;
-  off_t file_ofs;
-  bool success = false;
+  struct thread *t = thread_current (); 
+  struct Elf32_Ehdr ehdr;   //executable header
+  struct file *file = NULL; 
+  off_t file_ofs; //likely offset?
+  bool success = false; //WE ARE HERE
   int i;
 
   /* Allocate and activate page directory. */
-  t->pagedir = pagedir_create ();
+  t->pagedir = pagedir_create (); 
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
@@ -315,6 +320,21 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file_close (file);
   return success;
 }
+
+
+/*
+  a string parser a la Rachel and Cole: look at 3.3.3
+  pls don't
+*/
+
+static char* parsecmd(const char * cmdline){
+  //char * result;
+  char ** cmd_args;
+  return strtok_r(cmdline, ' ', cmd_args);
+
+}
+
+
 
 /* load() helpers. */
 
