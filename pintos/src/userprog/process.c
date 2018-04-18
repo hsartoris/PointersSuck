@@ -315,7 +315,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 					}
 					if (!load_segment (file, file_page, (void *) mem_page,
 								read_bytes, zero_bytes, writable)) {
-						printf("we here!!!!!!\n");
 						goto done;
 					}
 				}
@@ -325,7 +324,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 		}
 	}
 
-	printf("setup here\n");
 	/* Set up stack. */
 	if (!setup_stack (esp))
 		goto done;
@@ -504,7 +502,6 @@ setup_stack (void **esp)
 				*(int *)*esp = (int *) offset;
 			}
 
-			printf("we here.\n");
 			hex_dump(*esp, *esp, (int)(PHYS_BASE - *esp), true);
 			// *esp = PHYS_BASE - 12;
 		}else
