@@ -20,7 +20,6 @@ file_open (struct inode *inode)
   struct file *file = calloc (1, sizeof *file);
   if (inode != NULL && file != NULL)
     {
-	  printf("got here\n");
       file->inode = inode;
       file->pos = 0;
       file->deny_write = false;
