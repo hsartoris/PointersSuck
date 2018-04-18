@@ -1,0 +1,3 @@
+#!/bin/bash
+cd build
+pintos --filesys-size=2 -- run '/bin/ls -l foo bar'
