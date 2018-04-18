@@ -21,6 +21,10 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
+
+int argcount = 0;
+char ** args;
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -38,6 +42,8 @@ process_execute (const char *file_name)
 
   tid_t tid;
 
+  args = (char **) malloc(sizeof(char *)*MAX_ARGS);
+
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
@@ -45,10 +51,13 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-  for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL; //some good good
-    token = strtok_r (NULL, " ", &save_ptr))  //why this aint got a semicolon, I dunno
+  int i = 0;
+  for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL; 
+    token = strtok_r (NULL, " ", &save_ptr)){  //why this aint got a semicolon, I dunno
     printf ("'%s'\n", token); //probably should get rid of this
-
+    argcount ++;
+    strlcpy(args[i++], token, strlen(token)+1);
+}
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
@@ -458,15 +467,42 @@ setup_stack (void **esp)
 {
   uint8_t *kpage;
   bool success = false;
+  int wlen = sizeof(void *); //word size
+  int i;
+  void *offset = PHYS_BASE;
+  char* fname = args[0];
+
 
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL) 
   {
     success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-    if (success)
-      //*esp = PHYS_BASE;
-      *esp = PHYS_BASE - 12;
-    else
+    if (success){ //+SEA: No args, no word boundary padding
+      *esp = PHYS_BASE;
+      //copy args onto stack
+      for (i = argcount-1; i>=0; i--){
+        *esp -= (strlen(args[i]) + 1);
+        strlcpy(*esp, args[i], strlen(args[i] + 1));
+      }
+      *esp -= (strlen(fname) + 1); //function name itself LIKELY STORY... SVEN
+
+      //zero rest of page
+      while((unsigned int) (*esp) % wlen != 0){
+        *esp -= 1;
+        *(uint8_t*) *esp = 0x00; //zero one byte
+      }
+      *esp -= wlen; //null delimiter word
+      *(uint32_t*)*esp = (uint32_t)0;
+      //copy pointers to args onto stack (right to left)
+      for(i = argcount-1; i>=0; i--){
+        offset -= strlen(args[i]) + 1;
+        *esp = *esp - wlen;
+        *(int *)*esp = (int *) offset;
+      }
+
+      hex_dump(*esp, *esp, (int)(PHYS_BASE - *esp), true);
+      // *esp = PHYS_BASE - 12;
+    }else
       palloc_free_page (kpage);
   }
   return success;
@@ -491,3 +527,4 @@ install_page (void *upage, void *kpage, bool writable)
   return (pagedir_get_page (t->pagedir, upage) == NULL
     && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
+

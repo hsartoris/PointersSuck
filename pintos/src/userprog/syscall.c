@@ -27,7 +27,7 @@ syscall_handler (struct intr_frame *f)
 			thread_exit();
 
 		case SYS_EXEC: //exec
-
+			
 		case SYS_WAIT: //wait
 
 		case SYS_CREATE: //create
