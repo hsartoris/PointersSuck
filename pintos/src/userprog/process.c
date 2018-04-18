@@ -486,9 +486,8 @@ setup_stack (void **esp)
 				*esp -= (strlen(args[i]) + 1);
 				strlcpy(*esp, args[i], strlen(args[i] + 1));
 			}
-			//*esp -= (strlen(fname) + 1); //function name itself LIKELY STORY... SVEN
 
-			//zero rest of page
+			// zero down to word boundary
 			while((unsigned int) (*esp) % wlen != 0){
 				*esp -= 1;
 				*(uint8_t*) *esp = 0x00; //zero one byte
