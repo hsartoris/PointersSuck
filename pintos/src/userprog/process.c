@@ -110,6 +110,9 @@ start_process (void *file_name_)
 	int
 process_wait (tid_t child_tid UNUSED) 
 {
+	while (1) {
+
+	}
 	return -1;
 }
 
@@ -484,7 +487,7 @@ setup_stack (void **esp)
 			//copy args onto stack
 			for (i = argcount-1; i>=0; i--){
 				*esp -= (strlen(args[i]) + 1);
-				strlcpy(*esp, args[i], strlen(args[i] + 1));
+				strlcpy(*esp, args[i], strlen(args[i]) + 1);
 			}
 
 			// zero down to word boundary
@@ -503,7 +506,7 @@ setup_stack (void **esp)
 
 			hex_dump(*esp, *esp, (int)(PHYS_BASE - *esp), true);
 			// *esp = PHYS_BASE - 12;
-		}else
+		} else
 			palloc_free_page (kpage);
 	}
 	return success;

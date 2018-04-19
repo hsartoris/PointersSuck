@@ -4,6 +4,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "devices/shutdown.h"
+#include "filesys/file.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -17,6 +18,9 @@ syscall_init (void)
 syscall_handler (struct intr_frame *f) 
 {
 	int* call = (int*)f->esp;
+	int* fd;
+	const void* buff;
+	unsigned* size;
 	switch (*call) 
 	{
 		case SYS_HALT: //halt
@@ -41,7 +45,13 @@ syscall_handler (struct intr_frame *f)
 		case SYS_READ: //read
 
 		case SYS_WRITE: //write
-
+			fd = (int*)(f->esp + 1);
+			buff = (void*)(f->esp + 2);
+			size = (unsigned*)(f->esp + 3);
+			printf("%d\n", *fd);
+			if (*fd == 1)
+				putbuf(buff, *size);
+			break;
 		case SYS_SEEK: //seek
 
 		case SYS_TELL: //tell
@@ -49,8 +59,7 @@ syscall_handler (struct intr_frame *f)
 		case SYS_CLOSE: //close
 
 		default:
-			printf("go fuck yourself\n");
-
+			printf("aaaa\n");
 	}
 	printf ("system call %d!\n", *call);
 	thread_exit ();
