@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "$1"
+cd build
+pintos --filesys-size=2 -p ../../examples/echo -a echo -- -f run "echo $1"

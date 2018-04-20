@@ -504,6 +504,8 @@ setup_stack (void **esp)
 				*(int *)*esp = (int *) offset;
 			}
 
+			// THIS IS WHAT THE FUNCTION DECLARATION LOOKS LIKE
+			// hex_dump(intptr_t offset, const void *buf_, size_t size, bool ascii)
 			hex_dump(*esp, *esp, (int)(PHYS_BASE - *esp), true);
 			// *esp = PHYS_BASE - 12;
 		} else

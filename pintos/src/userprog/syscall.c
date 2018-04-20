@@ -6,6 +6,11 @@
 #include "devices/shutdown.h"
 #include "filesys/file.h"
 
+//this include for PHYS_BASE
+#ifndef PHYS_BASE
+#include "threads/vaddr.h"
+#endif
+
 static void syscall_handler (struct intr_frame *);
 
 	void
@@ -18,6 +23,14 @@ syscall_init (void)
 syscall_handler (struct intr_frame *f) 
 {
 	int* call = (int*)f->esp;
+
+	// some code for learning about interrupt frames
+	intr_dump_frame(f); // spits out all the data in f
+	// hex_dump (offset, buffer, size, bool of some kind?)
+	hex_dump(f->esp, f->esp, (int)(PHYS_BASE - f->esp), true);
+	// hopefully it works; just shut down after to avoid clutter
+	shutdown_power_off();
+
 	int* fd;
 	const void* buff;
 	unsigned* size;
