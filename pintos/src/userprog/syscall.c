@@ -99,7 +99,7 @@ syscall_handler (struct intr_frame *f)
 	thread_exit ();
 }
 
-
+//oh by the way, this doesn't work LOL
 int get_file_length(int fd){
 	struct inode* current_inode = inode_open(fd);
 	return inode_length(current_inode);
