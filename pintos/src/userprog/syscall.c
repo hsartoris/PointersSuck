@@ -76,12 +76,10 @@ syscall_handler (struct intr_frame *f)
 			read(fd, buff, size);
 		case SYS_WRITE: //write
 			printf("Write!\n");
-			fd = (int*)(f->esp + 1);
+			fd = *((int*)(f->esp + 1));
 			buff = (void*)(f->esp + 2);
 			size = (unsigned*)(f->esp + 3);	//seems sketchy and wrong <3 cole
-			printf("%d\n", &fd);
 			printf("Hex of esp + 1 as int: %x\n", fd);
-			printf("Hex of esp at end: %x\n", f->esp+178);
 
 			if (*fd == 1)
 				putbuf(buff, *size);
