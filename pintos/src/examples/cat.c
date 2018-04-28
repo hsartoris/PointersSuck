@@ -28,6 +28,7 @@ main (int argc, char *argv[])
             break;
           write (STDOUT_FILENO, buffer, bytes_read);
         }
+      printf("UHHHHH\n");
       close (fd);
     }
   return success ? EXIT_SUCCESS : EXIT_FAILURE;

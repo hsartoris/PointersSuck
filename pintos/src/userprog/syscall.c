@@ -18,6 +18,11 @@ static void syscall_handler (struct intr_frame *);
 int get_file_length(int fd);
 struct file * get_file(int fd);
 int read (int fd, void *buffer, unsigned size);
+void get_arg (struct intr_frame *f, int *arg, int n);
+int open (const char *file);
+int user_to_kernel_ptr (const void *vaddr);
+int write (int fd, const void *buffer, unsigned size);
+
 
 	void
 syscall_init (void) 
@@ -29,6 +34,8 @@ syscall_init (void)
 syscall_handler (struct intr_frame *f) 
 {
 	int* call = (int*)f->esp;
+	
+	int arg[10];	//arbitrary max
 
 	// some code for learning about interrupt frames
 	intr_dump_frame(f); // spits out all the data in f
@@ -36,22 +43,25 @@ syscall_handler (struct intr_frame *f)
 	hex_dump(f->esp, f->esp, (int)(PHYS_BASE - f->esp), true);
 	// hopefully it works; just shut down after to avoid clutter
 	//shutdown_power_off();
-	printf("OH HOWDY%x\n", f->esp+1);
+//	printf("OH HOWDY%x\n", f->esp+1);
 	int* fd;
 	struct file* this_file;
 	const void* buff;
 	unsigned* size;
+	//switch (*(int*)f->esp)
+	printf("System call: %d\n", *call);
 	switch (*call) 
 	{
+	
 		case SYS_HALT: //halt
 			printf("Halt!\n");
 			shutdown_power_off();
-
+			break;
 		case SYS_EXIT: //exit
 			//TODO: status
 			printf("Exit!\n");
 			thread_exit();
-
+			break;
 		case SYS_EXEC: //exec
 			printf("Exec!\n");
 		case SYS_WAIT: //wait
@@ -61,29 +71,48 @@ syscall_handler (struct intr_frame *f)
 		case SYS_REMOVE: //remove
 			printf("Remove\n");
 		case SYS_OPEN: //open
-			printf("Remove\n");
+			printf("Open!\n");
+			get_arg(f, &arg[0], 1);
+			arg[0] = user_to_kernel_ptr((const void *) arg[0]);
+			f->eax = open((const char *) arg[0]);
+			break;
 		case SYS_FILESIZE: //filesize NOT YET TESTED
 			printf("FileSize!\n");
-			fd = (int*)(f->esp + 1);	//theoretically the file
-			size = get_file_length(fd);
-			printf("%d\n", size);
+//			fd = (int*)(f->esp + 1);	//theoretically the file
+//			size = get_file_length(fd);
+			get_arg(f, &arg[0], 1);
+			f->eax = get_file_length(arg[0]);
+			printf("%d\n", f->eax);
 			break;
 		case SYS_READ: //read
 			printf("Read!\n");
-			buff[1234];	//likely garbagio
-			fd = (int*)(f->esp + 1);
-			size = get_file_length(fd);
-			read(fd, buff, size);
+//			buff[1234];	//likely garbagio
+//			fd = *((int*)f->esp + 1);
+//			size = get_file_length(fd);
+//			read(fd, buff, size);
+			get_arg(f, &arg[0], 1);
+			f->eax = open((const char *) arg[0]);
+			printf("end of read %s\n", arg[0]);
+			break;
+	
 		case SYS_WRITE: //write
 			printf("Write!\n");
-			fd = *((int*)(f->esp + 1));
-			buff = (void*)(f->esp + 2);
-			size = (unsigned*)(f->esp + 3);	//seems sketchy and wrong <3 cole
-			printf("Hex of esp + 1 as int: %x\n", fd);
+		//	fd = *((int*)f->esp + 1);
+		//	buff = (void*)*((int *)f->esp + 2);
+		//	size = *((unsigned *)f->esp + 3);	
+			//seems sketchy and wrong <3 cole
+		//	printf("Hex of esp + 1 as int: %x\n", fd);
 
-			if (*fd == 1)
-				putbuf(buff, *size);
-			break;
+		//	if (fd == 1)
+		//		putbuf(buff, size);
+	
+			get_arg(f, &arg[0], 3);
+			arg[1] = user_to_kernel_ptr((const void *) arg[1]);
+			f->eax = write(arg[0], (const void *) arg[1], (unsigned) arg[2]);
+			printf("fd: %d\n", arg[0]);
+			printf("Size: %d\n", get_file_length(arg[0])); 
+			break;	
+
 		case SYS_SEEK: //seek
 			printf("Seek!\n");
 		case SYS_TELL: //tell
@@ -93,14 +122,17 @@ syscall_handler (struct intr_frame *f)
 		default:
 			printf("We love vim <3\n");
 	}
-	printf ("system call %d!\n", *call);
-	thread_exit ();
+	//printf ("system call %d!\n", *call);
+	//thread_exit ();
 }
 
 //oh by the way, this doesn't work LOL
 int get_file_length(int fd){
-	struct inode* current_inode = inode_open(fd);
-	return inode_length(current_inode);
+	struct file *f = get_file(fd);
+	if(!f){
+		return -1;
+	}
+	return file_length(f);
 }
 
 struct file * get_file(int fd){
@@ -115,7 +147,46 @@ int read (int fd, void *buffer, unsigned size){
 	return bytes_read;
 }
 
+int write (int fd, const void *buffer, unsigned size){
+	if (fd == STDOUT_FILENO){
+		putbuf(buffer, size);
+		return size;
+	}
+	struct file *f = get_file(fd);
+	if(!f){
+		return -1;
+	}
+	int result = file_write(f, buffer, size);
+	return result;
 
+}
+
+int open (const char *file){
+	
+	struct file *f = file_open(file);
+	if(!f){
+		return -1;
+	}
+	return 0;
+}
+
+
+int user_to_kernel_ptr(const void *vaddr){
+	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
+	if(!ptr){
+		thread_exit();
+	}
+	return (int) ptr;
+}
+
+void get_arg (struct intr_frame *f, int *arg, int n){
+	int i, *ptr;
+	for(i = 0; i < n; i++){
+		ptr = (int *) f->esp + i + 1;
+		arg[i] = *ptr;
+	}
+
+}
 
 /**************************************************************************
  *Grabbed these boys off some assembly site ??

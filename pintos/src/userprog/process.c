@@ -54,9 +54,9 @@ process_execute (const char *file_name)
 	int i = 0;
 	for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL; 
 			token = strtok_r (NULL, " ", &save_ptr)){  //why this aint got a semicolon, I dunno
-		args[i] = (char*) malloc(strlen(token)+1);
+		args[i] = (char *)malloc(strlen(token)+1);
 		strlcpy(args[i++], token, strlen(token)+1);
-		//printf ("'%s'\n", token); //probably should get rid of this
+		printf ("'%s'\n", token); //probably should get rid of this
 		argcount ++;
 	}
 
@@ -110,8 +110,9 @@ start_process (void *file_name_)
 	int
 process_wait (tid_t child_tid UNUSED) 
 {
-	while (1) {
-
+	int a = 1;
+	while (a=1) {
+		
 	}
 	return -1;
 }
@@ -493,7 +494,8 @@ setup_stack (void **esp)
 			// zero down to word boundary
 			while((unsigned int) (*esp) % wlen != 0){
 				*esp -= 1;
-				//*(uint8_t*) *esp = 0x00; //zero one byte
+				//put this back in
+		//		*(uint8_t*) *esp = 0x00; //zero one byte
 			}
 			*esp -= wlen; //null delimiter word
 			*(uint32_t*)*esp = (uint32_t)0;
