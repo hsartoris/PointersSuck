@@ -38,9 +38,9 @@ syscall_handler (struct intr_frame *f)
 	int arg[10];	//arbitrary max
 
 	// some code for learning about interrupt frames
-	intr_dump_frame(f); // spits out all the data in f
+//	intr_dump_frame(f); // spits out all the data in f
 	// hex_dump (offset, buffer, size, bool of some kind?)
-	hex_dump(f->esp, f->esp, (int)(PHYS_BASE - f->esp), true);
+//	hex_dump(f->esp, f->esp, (int)(PHYS_BASE - f->esp), true);
 	// hopefully it works; just shut down after to avoid clutter
 	//shutdown_power_off();
 //	printf("OH HOWDY%x\n", f->esp+1);
@@ -124,6 +124,7 @@ syscall_handler (struct intr_frame *f)
 	}
 	//printf ("system call %d!\n", *call);
 	//thread_exit ();
+	
 }
 
 //oh by the way, this doesn't work LOL

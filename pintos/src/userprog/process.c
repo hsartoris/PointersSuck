@@ -41,7 +41,6 @@ process_execute (const char *file_name)
 	char *token, *save_ptr; //yours truly
 
 	tid_t tid;
-
 	args = (char **) malloc(sizeof(char *)*MAX_ARGS);
 
 	/* Make a copy of FILE_NAME.
@@ -478,7 +477,7 @@ setup_stack (void **esp)
 	void *offset = PHYS_BASE;
 	char* fname = args[0];
 
-
+	printf("Begin setting up stack\n");
 	kpage = palloc_get_page (PAL_USER | PAL_ZERO);
 	if (kpage != NULL) 
 	{
@@ -505,7 +504,7 @@ setup_stack (void **esp)
 				*esp = *esp - wlen;
 				*(int *)*esp = (int *) offset;
 			}
-
+			
 			// THIS IS WHAT THE FUNCTION DECLARATION LOOKS LIKE
 			// hex_dump(intptr_t offset, const void *buf_, size_t size, bool ascii)
 			hex_dump(*esp, *esp, (int)(PHYS_BASE - *esp), true);
