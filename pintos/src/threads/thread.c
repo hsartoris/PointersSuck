@@ -7,18 +7,23 @@
 #include "threads/flags.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
+#include "threads/malloc.h"
 #include "threads/palloc.h"
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
-#ifdef USERPROG
+//#ifdef USERPROG
 #include "userprog/process.h"
-#endif
+#include "userprog/syscall.h"
+//#endif
 
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
+
+#define MIN_FD 2
+#define NO_PARENT -1
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -171,6 +176,7 @@ thread_create (const char *name, int priority,
   struct switch_entry_frame *ef;
   struct switch_threads_frame *sf;
   tid_t tid;
+	enum intr_level old_level;	//IM SCARED	
 
   ASSERT (function != NULL);
 
@@ -182,6 +188,9 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
+
+//SOME STACK BULLSHIT
+	old_level = intr_disable();
 
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
@@ -197,6 +206,13 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
+
+  //MORE STACK BULLSHIT
+  	intr_set_level(old_level);
+	// Add child process to child list
+  t->parent = thread_tid();
+  struct child_process *cp = addd_child_process(t->tid);
+  t->cp = cp;
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -464,9 +480,16 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
 
-  old_level = intr_disable ();
+ // old_level = intr_disable (); //DOING THIS IN CREATE
   list_push_back (&all_list, &t->allelem);
-  intr_set_level (old_level);
+ // intr_set_level (old_level); //See above
+ 
+  list_init(&t->file_list);
+  t->fd = MIN_FD;
+
+  list_init(&t->child_list);
+  t->cp = NULL;
+  t->parent = NO_PARENT;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -582,3 +605,31 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+bool thread_alive (int pid){
+	struct list_elem *e;
+
+	for(e = list_begin(&all_list); e != list_end(&all_list); e = list_next(e)){
+		struct thread *t = list_entry(e, struct thread, allelem);
+		if (t->tid == pid){
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
+
+
+
+struct child_process* addd_child_process (int pid){
+        struct child_process* cp = malloc(sizeof(struct child_process));
+        cp->pid = pid;
+        cp->load = NOT_LOADED;
+        cp->wait = false;
+        cp->exit = false;
+        lock_init(&cp->wait_lock);
+        list_push_back(&thread_current()->child_list, &cp->elem);
+        return cp;
+}
