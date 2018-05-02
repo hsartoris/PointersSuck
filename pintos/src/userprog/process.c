@@ -55,10 +55,11 @@ process_execute (const char *file_name)
 	int i = 0;
 	for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL; 
 			token = strtok_r (NULL, " ", &save_ptr)){  //why this aint got a semicolon, I dunno
-		args[i] = (char *)malloc(strlen(token)+1);
-		strlcpy(args[i++], token, strlen(token)+1);
+		args[i] = malloc(strlen(token)+1);
+		strlcpy(args[i], token, strlen(token)+1);
 		printf ("'%s'\n", token); //probably should get rid of this
 		argcount ++;
+		i++;
 	}
 
 	/* Create a new thread to execute FILE_NAME. */
@@ -495,6 +496,7 @@ setup_stack (void **esp)
 		success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
 		if (success){ //+SEA: No args, no word boundary padding
 			*esp = PHYS_BASE;
+		}
 			//copy args onto stack
 			for (i = argcount-1; i>=0; i--){
 				*esp -= (strlen(args[i]) + 1);
@@ -505,7 +507,7 @@ setup_stack (void **esp)
 			while((unsigned int) (*esp) % wlen != 0){
 				*esp -= 1;
 				//put this back in
-		//		*(uint8_t*) *esp = 0x00; //zero one byte
+				*(uint8_t*) *esp = 0x00; //zero one byte
 			}
 			*esp -= wlen; //null delimiter word
 			*(uint32_t*)*esp = (uint32_t)0;
@@ -518,9 +520,9 @@ setup_stack (void **esp)
 			
 			// THIS IS WHAT THE FUNCTION DECLARATION LOOKS LIKE
 			// hex_dump(intptr_t offset, const void *buf_, size_t size, bool ascii)
-			hex_dump(*esp, *esp, (int)(PHYS_BASE - *esp), true);
+			hex_dump((uintptr_t *) *esp, (const void *) *esp, (int)(PHYS_BASE - *esp), true);
 			// *esp = PHYS_BASE - 12;
-		} else
+		} else{
 			palloc_free_page (kpage);
 	}
 	return success;

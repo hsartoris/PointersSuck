@@ -121,7 +121,7 @@ syscall_handler (struct intr_frame *f)
 	
 		case SYS_WRITE: //write
 			printf("Write!\n");
-		//	fd = *((int*)f->esp + 1);
+			//fd = *((int*)f->esp + 1);
 		//	buff = (void*)*((int *)f->esp + 2);
 		//	size = *((unsigned *)f->esp + 3);	
 			//seems sketchy and wrong <3 cole
@@ -133,9 +133,10 @@ syscall_handler (struct intr_frame *f)
 			get_arg(f, &arg[0], 3);
 			check_valid_buffer((void *) arg[1], (unsigned) arg[2]);
 			arg[1] = user_to_kernel_ptr((const void *) arg[1]);
+			printf("Size ahhh: %d\n", get_file_length(arg[0]));
 			f->eax = write(arg[0], (const void *) &arg[1], (unsigned) arg[2]);
 			//printf("fd: %d\n", arg[0]);
-			//printf("Size: %d\n", get_file_length(arg[0])); 
+			//printf("Size ahhh: %d\n", get_file_length(arg[0])); 
 			//printf("Buffer? : %d\n", arg[2]);
 			break;	
 
@@ -221,10 +222,10 @@ int write (int fd, const void *buffer, unsigned size){
 	if (fd == STDOUT_FILENO){
 		printf("Fd is 1\n");
 		printf("In Write, size is: %d\n", size);
-		printf("In Write, buff is: %d\n", buffer);
-		//putbuf(buffer, size);
-		uint8_t* local_buffer = (uint8_t *) buffer;
-		putbuf(local_buffer,20);
+		printf("In Write, buff is: %s\n", buffer);
+		putbuf(buffer, size);
+		//uint32_t* local_buffer = (uint32_t *) buffer;
+		//putbuf(local_buffer,5);
 		return size;
 	}
 	struct file *f = get_file(fd);
