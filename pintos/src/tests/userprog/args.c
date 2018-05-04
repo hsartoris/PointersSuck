@@ -10,7 +10,7 @@ main (int argc, char *argv[])
 {
   int i;
   test_name = "args";
-
+//	printf("Also haven't seen you here in a bit... \n");
   msg ("begin");
   msg ("argc = %d", argc);
   for (i = 0; i <= argc; i++)

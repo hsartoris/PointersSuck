@@ -57,13 +57,13 @@ process_execute (const char *file_name)
 			token = strtok_r (NULL, " ", &save_ptr)){  //why this aint got a semicolon, I dunno
 		args[i] = malloc(strlen(token)+1);
 		strlcpy(args[i], token, strlen(token)+1);
-		printf ("'%s'\n", token); //probably should get rid of this
+//	printf ("'%s'\n", token); //probably should get rid of this
 		argcount ++;
 		i++;
 	}
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (args[0], PRI_DEFAULT, start_process, fn_copy);
+	tid = thread_create (args[0], PRI_DEFAULT+1, start_process, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy); 
 	return tid;
@@ -112,6 +112,7 @@ start_process (void *file_name_)
 	int
 process_wait (tid_t child_tid UNUSED) 
 {
+	
 	struct child_process* cp = get_child_process(child_tid);
 	if(!cp){
 		return ERROR;
@@ -126,7 +127,10 @@ process_wait (tid_t child_tid UNUSED)
 	int status = cp->status;
 	remove_child_process(cp);
 	return status;
-}
+	
+//	while(1){	}
+//	return -1;
+	}
 
 /* Free the current process's resources. */
 	void
@@ -530,7 +534,7 @@ setup_stack (void **esp)
 			
 			// THIS IS WHAT THE FUNCTION DECLARATION LOOKS LIKE
 			// hex_dump(intptr_t offset, const void *buf_, size_t size, bool ascii)
-			hex_dump((uintptr_t *) *esp, (const void *) *esp, (int)(PHYS_BASE - *esp), true);
+		//	hex_dump((uintptr_t *) *esp, (const void *) *esp, (int)(PHYS_BASE - *esp), true);
 			// *esp = PHYS_BASE - 12;
 		} else{
 			palloc_free_page (kpage);

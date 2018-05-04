@@ -63,56 +63,67 @@ syscall_handler (struct intr_frame *f)
 	const void* buff;
 	unsigned* size;
 	//switch (*(int*)f->esp)
-	printf("System call: %d\n", *call);
+//	printf("System call: %d\n", *call);
 	switch (*call) 
 	{
 	
 		case SYS_HALT: //halt
-			printf("Halt!\n");
+		//	printf("Halt!\n");
 			shutdown_power_off();
 			break;
 		case SYS_EXIT: //exit
 			//TODO: status
-			printf("Exit!\n");
+		//	printf("Exit!\n");
 		//	thread_exit();
 			get_arg(f, &arg[0], 1);
 			exit(*(int*)arg[0]);
 			break;
 		case SYS_EXEC: //exec
-			printf("Exec!\n");
-		case SYS_WAIT: //wait
-			printf("Wait!\n");
+			//make bullshit high priority so the cmd to run yields the current
+			
 			get_arg(f, &arg[0], 1);
-			f->eax = wait(&arg[0]);
+			arg[0] = user_to_kernel_ptr((const void*) arg[0]);
+			f->eax = exec((const char *) arg[0]);
+	
+			printf("Exec!\n");
+			break;
+		case SYS_WAIT: //wait
+//			printf("Wait!\n");
+			get_arg(f, &arg[0], 1);
+			f->eax = wait(arg[0]);
+			break;
 		case SYS_CREATE: //create
-			printf("Create!\n");
+//			printf("Create!\n");
+			break;
 		case SYS_REMOVE: //remove
-			printf("Remove\n");
+//			printf("Remove\n");
+			break;
 		case SYS_OPEN: //open
-			printf("Open!\n");
+//			printf("Open!\n");
 			get_arg(f, &arg[0], 1);
 			arg[0] = user_to_kernel_ptr((const void *) arg[0]);
-			f->eax = open((const char *) arg[0]);
+			f->eax = open((char *) arg[0]);
 			break;
 		case SYS_FILESIZE: //filesize NOT YET TESTED
-			printf("FileSize!\n");
+//			printf("FileSize!\n");
 //			fd = (int*)(f->esp + 1);	//theoretically the file
 //			size = get_file_length(fd);
 			get_arg(f, &arg[0], 1);
 			f->eax = get_file_length(arg[0]);
-			printf("%d\n", f->eax);
+//			printf("%d\n", f->eax);
 			break;
 		case SYS_READ: //read
-			printf("Read!\n");
+//			printf("Read!\n");
 //			buff[1234];	//likely garbagio
 //			fd = *((int*)f->esp + 1);
 //			size = get_file_length(fd);
 //			read(fd, buff, size);
 			get_arg(f, &arg[0], 3);
-			check_valid_buffer((void *) arg[1], (unsigned) arg[2]);
-			arg[1] = user_to_kernel_ptr((const void *) arg[1]);
-			f->eax = read(arg[0], (void *) arg[1], (unsigned) arg[2]);
-			printf("end of read %s\n", arg[0]);
+			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
+			//arg[1] = user_to_kernel_ptr((const void *) arg[1]);
+			f->eax = read(*(int*)arg[0], *(char **) arg[1],
+				       	*(unsigned*) arg[2]);
+//			printf("end of read %s\n", arg[0]);
 			break;
 	
 		case SYS_WRITE: //write
@@ -124,11 +135,11 @@ syscall_handler (struct intr_frame *f)
 			break;	
 
 		case SYS_SEEK: //seek
-			printf("Seek!\n");
+//			printf("Seek!\n");
 		case SYS_TELL: //tell
-			printf("Tell!\n");
+//			printf("Tell!\n");
 		case SYS_CLOSE: //close
-			printf("Close!\n");
+//			printf("Close!\n");
 		default:
 			printf("We love vim <3\n");
 	}
@@ -192,6 +203,7 @@ int read (int fd, void *buffer, unsigned size){
 		for(i=0; i<size; i++){
 			local_buffer[i] = input_getc();
 		}
+		
 		return size;
 	}
 	struct file *f = get_file(fd);
@@ -215,9 +227,9 @@ int write (int fd, const void *buffer, unsigned size){
 	if(!f){
 		return -1;
 	}
-	printf("before file write\n");
+//	printf("before file write\n");
 	int result = file_write(f, buffer, size);
-	printf("Nothing is here\n");
+//	printf("Nothing is here\n");
 	return result;
 
 }
@@ -249,11 +261,12 @@ pid_t exec(const char *cmd_line){
 }
 
 void exit (int status){
-	struct thread *cur = thread_current();
-	if (thread_alive(cur->parent)){
-		cur->cp->status = status;
-	}
-	printf("%s: exit(%d)\n", cur->name, status);
+//	struct thread *cur = thread_current();
+//	if (thread_alive(cur->parent)){
+//		cur->cp->status = status;
+//	}
+//	printf("%s: exit(%d)\n", cur->name, status);
+//	printf("Some bullshit\n");
 	thread_exit();
 }
 
@@ -281,6 +294,7 @@ int user_to_kernel_ptr(const void *vaddr){
 struct child_process* get_child_process (int pid){
 	struct thread *t = thread_current();
 	struct list_elem *e;
+
 
 	for (e = list_begin(&t->child_list); e != list_end(&t->child_list); e = list_next(e)){
 		struct child_process *cp = list_entry(e, struct child_process, elem);
@@ -332,10 +346,10 @@ void get_arg (struct intr_frame *f, int *arg, int n){
 	// pointers. - Hayden
 	int i, *ptr;
 	int wlen = sizeof(void*);
-	printf("esp=%08"PRIx32"\n", f->esp);
+//	printf("esp=%08"PRIx32"\n", f->esp);
 	for(i = 0; i < n; i++) {
-		printf("current arg address: %08"PRIx32"\n", 
-			f->esp+((i+1) * wlen));
+//		printf("current arg address: %08"PRIx32"\n", 
+//			f->esp+((i+1) * wlen));
 		//ptr = f->esp + (i * sizeof(void*));
 		//arg[i] = *ptr;
 		arg[i] = f->esp + ((i+1) * wlen);
@@ -359,4 +373,4 @@ void get_arg (struct intr_frame *f, int *arg, int n){
  *es: extra segment register, also used in special instructions that span
       segments (ala: string copies)
  *ss: stack segment, added to address during stack access
- *************************************************************************/
+ */
