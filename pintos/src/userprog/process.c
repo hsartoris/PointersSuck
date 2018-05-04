@@ -18,6 +18,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "userprog/syscall.h"
+#include "userprog/ipc.h"
 
 
 static thread_func start_process NO_RETURN;
@@ -120,13 +121,13 @@ process_wait (tid_t child_tid UNUSED)
 	if(cp->wait){
 		return ERROR;
 	}
-	cp->wait = true;
-	while (!cp->exit){
-		barrier();
-	}
-	int status = cp->status;
+	//cp->wait = true;
+	//while (!cp->exit){
+	//	barrier();
+	//}
+	//int status = cp->status;
 	remove_child_process(cp);
-	return status;
+	return ipc_read("wait", cp->pid);
 	
 //	while(1){	}
 //	return -1;
@@ -138,6 +139,7 @@ process_exit (void)
 {
 	struct thread *cur = thread_current ();
 	uint32_t *pd;
+	ipc_write("wait", cur->tid, cur->status);
 
 	/* Destroy the current process's page directory and switch back
 	   to the kernel-only page directory. */
