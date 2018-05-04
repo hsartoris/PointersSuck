@@ -50,15 +50,11 @@ syscall_handler (struct intr_frame *f)
 {
 	int* call = (int*)f->esp;
 	
-	int arg[10];	//arbitrary max
+	void* arg[10];	//arbitrary max
 
 
 	// some code for learning about interrupt frames
-	printf("before frame dump\n");
-	intr_dump_frame(f); // spits out all the data in f
-	printf("after frame dump\n");
 	// hex_dump (offset, buffer, size, bool of some kind?)
-	hex_dump(f->esp, f->esp, (int)(PHYS_BASE - f->esp), true);
 	// hopefully it works; just shut down after to avoid clutter
 	//shutdown_power_off();
 //	printf("OH HOWDY%x\n", f->esp+1);
@@ -80,7 +76,7 @@ syscall_handler (struct intr_frame *f)
 			printf("Exit!\n");
 		//	thread_exit();
 			get_arg(f, &arg[0], 1);
-			exit(&arg[0]);
+			exit(*(int*)arg[0]);
 			break;
 		case SYS_EXEC: //exec
 			printf("Exec!\n");
@@ -120,24 +116,11 @@ syscall_handler (struct intr_frame *f)
 			break;
 	
 		case SYS_WRITE: //write
-			printf("Write!\n");
-			//fd = *((int*)f->esp + 1);
-		//	buff = (void*)*((int *)f->esp + 2);
-		//	size = *((unsigned *)f->esp + 3);	
-			//seems sketchy and wrong <3 cole
-		//	printf("Hex of esp + 1 as int: %x\n", fd);
-
-		//	if (fd == 1)
-		//		putbuf(buff, size);
-	
 			get_arg(f, &arg[0], 3);
-			check_valid_buffer((void *) arg[1], (unsigned) arg[2]);
-			arg[1] = user_to_kernel_ptr((const void *) arg[1]);
-			printf("Size ahhh: %d\n", get_file_length(arg[0]));
-			f->eax = write(arg[0], (const void *) &arg[1], (unsigned) arg[2]);
-			//printf("fd: %d\n", arg[0]);
-			//printf("Size ahhh: %d\n", get_file_length(arg[0])); 
-			//printf("Buffer? : %d\n", arg[2]);
+			
+			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
+			f->eax = write(*(int*)arg[0], *(char **) arg[1], 
+					*(unsigned*) arg[2]);
 			break;	
 
 		case SYS_SEEK: //seek
@@ -220,9 +203,9 @@ int read (int fd, void *buffer, unsigned size){
 }
 int write (int fd, const void *buffer, unsigned size){
 	if (fd == STDOUT_FILENO){
-		printf("Fd is 1\n");
-		printf("In Write, size is: %d\n", size);
-		printf("In Write, buff is: %s\n", buffer);
+		//printf("Fd is 1\n");
+		//printf("In Write, size is: %d\n", size);
+		//printf("In Write, buff is: %s\n", buffer);
 		putbuf(buffer, size);
 		//uint32_t* local_buffer = (uint32_t *) buffer;
 		//putbuf(local_buffer,5);
@@ -344,11 +327,19 @@ void check_valid_buffer(void* buffer, unsigned size){
 }
 
 void get_arg (struct intr_frame *f, int *arg, int n){
+	// The arguments stored on the stack aren't necessarily
+	// integers. We don't know in this function; just return
+	// pointers. - Hayden
 	int i, *ptr;
-	for(i = 0; i < n; i++){
-		ptr = (int *) f->esp + i + 1;
-		arg[i] = *ptr;
-		printf("Arg[%d] is: %d\n", i, arg[i]);
+	int wlen = sizeof(void*);
+	printf("esp=%08"PRIx32"\n", f->esp);
+	for(i = 0; i < n; i++) {
+		printf("current arg address: %08"PRIx32"\n", 
+			f->esp+((i+1) * wlen));
+		//ptr = f->esp + (i * sizeof(void*));
+		//arg[i] = *ptr;
+		arg[i] = f->esp + ((i+1) * wlen);
+		//printf("Arg[%d] is: %d\n", i, arg[i]);
 	}
 
 }

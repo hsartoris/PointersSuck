@@ -512,13 +512,21 @@ setup_stack (void **esp)
 				*(uint8_t*) *esp = 0x00; //zero one byte
 			}
 			*esp -= wlen; //null delimiter word
-			*(uint32_t*)*esp = (uint32_t)0;
+			*(uint8_t*)*esp = (uint8_t)0;
+			printf("esp: %08"PRIx32"\n", *esp);
 			//copy pointers to args onto stack (right to left)
 			for(i = argcount-1; i>=0; i--){
 				offset -= strlen(args[i]) + 1;
 				*esp = *esp - wlen;
 				*(int *)*esp = (int *) offset;
 			}
+			uint32_t argv0 = *esp;
+			*esp -= wlen;
+			*(char **)*esp = argv0;
+			*esp -= wlen;
+			*(int*)*esp = argcount;
+			*esp -= wlen;
+
 			
 			// THIS IS WHAT THE FUNCTION DECLARATION LOOKS LIKE
 			// hex_dump(intptr_t offset, const void *buf_, size_t size, bool ascii)
