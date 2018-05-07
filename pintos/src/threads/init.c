@@ -28,6 +28,7 @@
 #include "userprog/gdt.h"
 #include "userprog/syscall.h"
 #include "userprog/tss.h"
+#include "userprog/ipc.h"
 #else
 #include "tests/threads/tests.h"
 #endif
@@ -113,6 +114,8 @@ main (void)
 #ifdef USERPROG
   exception_init ();
   syscall_init ();
+  // added call to ipc_init - Hayden
+  ipc_init ();
 #endif
 
   /* Start thread scheduler and enable interrupts. */
@@ -285,7 +288,11 @@ run_task (char **argv)
   
   printf ("Executing '%s':\n", task);
 #ifdef USERPROG
-  process_wait (process_execute (task));
+  tid_t child_tid = process_execute (task);
+#ifdef DEBUG
+  printf("init.c: child_tid = %d\n", child_tid);
+#endif
+  process_wait (child_tid);
 //	thread_yield();
 #else
   run_test (task);

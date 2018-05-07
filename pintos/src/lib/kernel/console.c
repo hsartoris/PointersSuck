@@ -153,8 +153,10 @@ void
 putbuf (const char *buffer, size_t n) 
 {
   acquire_console ();
-  while (n-- > 0)
+  while (n-- > 0) {
+	//printf("buff: %c\n", *buffer);
     putchar_have_lock (*buffer++);
+  }
   release_console ();
 }
 
