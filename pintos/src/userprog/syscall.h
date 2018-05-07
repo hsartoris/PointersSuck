@@ -33,6 +33,8 @@ void process_close_file (int fd);
 void syscall_init (void);
 
 
+int is_valid_pointer(void* esp, uint8_t argc);
+static int get_user (const uint8_t *uaddr);
 
 
 

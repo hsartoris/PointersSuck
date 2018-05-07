@@ -18,7 +18,7 @@
 #include "threads/vaddr.h"
 #endif
 
-#define virt_bottom ((int *)0x0804ba68) //maybe supposed to be a void *
+#define virt_bottom ((void *)0x0804ba68) //maybe supposed to be a void *
 
 static void syscall_handler (struct intr_frame *);
 int get_file_length(int fd);
@@ -81,11 +81,12 @@ syscall_handler (struct intr_frame *f)
 		case SYS_EXEC: //exec
 			//make bullshit high priority so the cmd to run yields the current
 			
+			if (!is_valid_pointer(f->esp + 4, 4))
+				return -1;
+
 			get_arg(f, &arg[0], 1);
-			arg[0] = user_to_kernel_ptr((const void*) arg[0]);
 			f->eax = exec((const char *) arg[0]);
 	
-			printf("Exec!\n");
 			break;
 		case SYS_WAIT: //wait
 //			printf("Wait!\n");
@@ -100,6 +101,8 @@ syscall_handler (struct intr_frame *f)
 			break;
 		case SYS_OPEN: //open
 //			printf("Open!\n");
+			if (!is_valid_pointer(f->esp+4,4))
+				return -1;
 			get_arg(f, &arg[0], 1);
 			arg[0] = user_to_kernel_ptr((const void *) arg[0]);
 			if (arg[0] == -1) {
@@ -140,8 +143,18 @@ syscall_handler (struct intr_frame *f)
 
 		case SYS_SEEK: //seek
 //			printf("Seek!\n");
+			get_arg(f, &arg[0], 2);
+			struct file* file_entry = process_get_file(*(int*)arg[0]);
+			if (file_entry != NULL)
+				file_seek(file_entry, *(unsigned*) arg[1]);
 			break;
 		case SYS_TELL: //tell
+			get_arg(f, &arg[0], 1);
+			file_entry = process_get_file(*(int *)arg[0]);
+			if (file_entry == NULL)
+				f->eax = -1;
+			else
+				f->eax = file_tell(file_entry);
 //			printf("Tell!\n");
 			break;
 		case SYS_CLOSE: //close
@@ -279,6 +292,7 @@ void exit (int status){
 //	}
 //	printf("%s: exit(%d)\n", cur->name, status);
 //	printf("Some bullshit\n");
+	thread_current ()->status = status;
 	thread_exit();
 }
 
@@ -286,10 +300,11 @@ void exit (int status){
 int user_to_kernel_ptr(const void *vaddr){
 	if (!is_user_vaddr(vaddr) || vaddr < virt_bottom)
 		return -1;
+	if (vaddr > PHYS_BASE)
+		exit(-1);
 	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
-	if(!ptr){
-		thread_exit();
-	}
+	if(ptr == NULL)
+		return -1;
 	return (int) ptr;
 }
 
@@ -338,6 +353,26 @@ void remove_child_processes(void){
 		
 }
 
+static int get_user (const uint8_t* uaddr)
+{
+	int result;
+	asm ("movl $1f, %0; movzbl %1, %0; 1:"
+			: "=&a" (result) : "m" (*uaddr));
+	return result;
+}
+
+int is_valid_pointer(void* esp, uint8_t argc)
+{
+	uint8_t i;
+	for (i = 0; i < argc; ++i)
+	{
+		if (get_user (((uint8_t*)esp)+i) == -1)
+		{
+			return -1;
+		}
+	}
+	return 1;
+}
 
 void check_valid_ptr(const void *vaddr){
 	if (!is_user_vaddr(vaddr) || vaddr < virt_bottom){
