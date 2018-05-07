@@ -111,9 +111,11 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 	int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
-	
+#ifdef DEBUG
+	printf("process.c: waiting on tid %d\n", child_tid);	
+#endif
 	struct child_process* cp = get_child_process(child_tid);
 	if(!cp){
 		return ERROR;
@@ -127,7 +129,7 @@ process_wait (tid_t child_tid UNUSED)
 	//}
 	//int status = cp->status;
 	remove_child_process(cp);
-	return ipc_read("wait", cp->pid);
+	return ipc_read("wait", child_tid);
 	
 //	while(1){	}
 //	return -1;

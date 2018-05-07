@@ -1,4 +1,9 @@
 #!/bin/bash
 echo "$1"
+if [ "$#" -eq 2 ] && [ "$2" = "gdb" ]; then
+	GDB="--gdb"
+else
+	GDB=""
+fi
 cd build
-pintos --filesys-size=2 -p ../../examples/echo -a echo -- -f run "echo $1"
+pintos --filesys-size=2 -p ../../examples/echo -a echo $GDB -- -f run "echo $1"
