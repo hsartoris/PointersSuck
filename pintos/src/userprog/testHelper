@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ "$#" -eq 1 ]; then
+	echo "Printing $1 results"
+	TEST="$1"
+	for t in build/tests/userprog/$TEST-*.result; do
+		echo $t
+		cat $t
+	done
+else
+	for t in build/tests/userprog/*.result; do
+		echo $t
+		cat $t
+	done
+fi
+

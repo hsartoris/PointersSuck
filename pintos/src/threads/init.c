@@ -289,11 +289,7 @@ run_task (char **argv)
   printf ("Executing '%s':\n", task);
 #ifdef USERPROG
   tid_t child_tid = process_execute (task);
-#ifdef DEBUG
-  printf("init.c: child_tid = %d\n", child_tid);
-#endif
   process_wait (child_tid);
-//	thread_yield();
 #else
   run_test (task);
 #endif

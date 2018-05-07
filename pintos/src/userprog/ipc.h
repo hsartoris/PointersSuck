@@ -2,7 +2,7 @@
 #define USERPROG_IPC_H
 
 #define WRITE_ACCEPT_FAILED -10000
-#define DEBUG
+//#define DEBUG
 
 struct write
 {

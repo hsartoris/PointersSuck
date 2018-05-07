@@ -143,6 +143,11 @@ process_exit (void)
 	uint32_t *pd;
 	ipc_write("wait", cur->tid, cur->status);
 
+	if (thread_tid() == 1)
+		return;
+
+	printf("%s: exit(%d)\n", cur->name, cur->status);
+
 	/* Destroy the current process's page directory and switch back
 	   to the kernel-only page directory. */
 	pd = cur->pagedir;
@@ -521,7 +526,6 @@ setup_stack (void **esp)
 			}
 			*esp -= wlen; //null delimiter word
 			*(uint8_t*)*esp = (uint8_t)0;
-			printf("esp: %08"PRIx32"\n", *esp);
 			//copy pointers to args onto stack (right to left)
 			for(i = argcount-1; i>=0; i--){
 				offset -= strlen(args[i]) + 1;

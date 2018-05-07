@@ -136,10 +136,13 @@ syscall_handler (struct intr_frame *f)
 
 		case SYS_SEEK: //seek
 //			printf("Seek!\n");
+			break;
 		case SYS_TELL: //tell
 //			printf("Tell!\n");
+			break;
 		case SYS_CLOSE: //close
 //			printf("Close!\n");
+			break;
 		default:
 			printf("We love vim <3\n");
 	}
