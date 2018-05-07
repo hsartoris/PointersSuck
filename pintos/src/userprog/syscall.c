@@ -142,6 +142,9 @@ syscall_handler (struct intr_frame *f)
 //			size = get_file_length(fd);
 //			read(fd, buff, size);
 			get_arg(f, &arg[0], 3);
+			if(!is_valid_pointer(f->esp +4, 12)){
+				return -1;
+			}
 			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
 			//arg[1] = user_to_kernel_ptr((const void *) arg[1]);
 			f->eax = read(*(int*)arg[0], *(char **) arg[1],
@@ -151,7 +154,9 @@ syscall_handler (struct intr_frame *f)
 	
 		case SYS_WRITE: //write
 			get_arg(f, &arg[0], 3);
-			
+			if(!is_valid_pointer(f->esp +4, 12)){
+				return -1;
+			}		
 			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
 			f->eax = write(*(int*)arg[0], *(char **) arg[1], 
 					*(unsigned*) arg[2]);
@@ -249,13 +254,20 @@ int read (int fd, void *buffer, unsigned size){
 		
 		return size;
 	}
+	else if(process_get_file(fd) != NULL){
+                struct file *file = process_get_file(fd);
+                return (int)file_read(file, buffer, size);
+        }
+	return -1;
+	/*
 	struct file *f = get_file(fd);
 	if(!f){
 		return ERROR;
 	}
 	int bytes = file_read(f, buffer, size);
 	return bytes;
-}
+	*/
+	}
 int write (int fd, const void *buffer, unsigned size){
 	if (fd == STDOUT_FILENO){
 		//printf("Fd is 1\n");
@@ -266,15 +278,21 @@ int write (int fd, const void *buffer, unsigned size){
 		//putbuf(local_buffer,5);
 		return size;
 	}
-	struct file *f = get_file(fd);
-	if(!f){
+	else if(process_get_file(fd) != NULL){
+		struct file *file = process_get_file(fd);
+		return (int)file_write(file, buffer, size);
+	}
+	return -1;
+	/*
+	struct file *file = get_file(fd);
+	if(!file){
 		return -1;
 	}
 //	printf("before file write\n");
-	int result = file_write(f, buffer, size);
+	int result = file_write(file, buffer, size);
 //	printf("Nothing is here\n");
 	return result;
-
+	*/
 }
 
 int wait (pid_t pid){
