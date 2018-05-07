@@ -32,6 +32,8 @@ void check_valid_ptr (const void *vaddr);
 void check_valid_buffer (void* buffer, unsigned size);
 int add_file (struct file *f);
 struct file* process_get_file (int fd);
+static bool is_valid_string(void * str);
+
 
 struct process_file {
   struct file *file;
@@ -95,9 +97,23 @@ syscall_handler (struct intr_frame *f)
 			break;
 		case SYS_CREATE: //create
 //			printf("Create!\n");
+			if (!is_valid_pointer(f->esp+4, 4)||
+				!is_valid_string(*(char **)(f->esp +4)) || 
+				!is_valid_pointer(f->esp+8, 4)){
+				return -1;
+			}
+			get_arg(f, &arg[0], 3);
+			f->eax = create(*(char **)(f->esp+4), *(int *)(f->esp +8));
+			return 0;
 			break;
 		case SYS_REMOVE: //remove
 //			printf("Remove\n");
+			if (!is_valid_pointer(f->esp +4, 4) ||
+				!is_valid_string(*(char **)(f->esp+4))){
+				return -1;
+			}
+			f->eax = remove(*(char **)(f->esp + 4));
+			return 0;
 			break;
 		case SYS_OPEN: //open
 //			printf("Open!\n");
@@ -208,6 +224,13 @@ struct file* process_get_file (int fd)
   return NULL;
 }
 
+bool create (const char *file_name, unsigned start_size){
+	return filesys_create(file_name, start_size);
+}
+
+bool remove (const char *file_name){
+	return filesys_remove (file_name);
+}
 
 
 
@@ -361,6 +384,17 @@ static int get_user (const uint8_t* uaddr)
 	return result;
 }
 
+static bool
+put_user (uint8_t *udst, uint8_t byte)
+{
+  if(!is_user_vaddr(udst))
+    return false;
+  int error_code;
+  asm ("movl $1f, %0; movb %b2, %1; 1:"
+       : "=&a" (error_code), "=m" (*udst) : "q" (byte));
+  return error_code != -1;
+}
+
 int is_valid_pointer(void* esp, uint8_t argc)
 {
 	uint8_t i;
@@ -373,6 +407,17 @@ int is_valid_pointer(void* esp, uint8_t argc)
 	}
 	return 1;
 }
+
+static bool is_valid_string(void * str)
+{
+  int ch=-1;
+  while((ch=get_user((uint8_t*)str++))!='\0' && ch!=-1);
+    if(ch=='\0')
+      return true;
+    else
+      return false;
+}
+
 
 void check_valid_ptr(const void *vaddr){
 	if (!is_user_vaddr(vaddr) || vaddr < virt_bottom){
