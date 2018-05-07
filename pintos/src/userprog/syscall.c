@@ -102,7 +102,11 @@ syscall_handler (struct intr_frame *f)
 //			printf("Open!\n");
 			get_arg(f, &arg[0], 1);
 			arg[0] = user_to_kernel_ptr((const void *) arg[0]);
-			f->eax = open((char *) arg[0]);
+			if (arg[0] == -1) {
+				f->eax = -1;
+				break;
+			}
+			f->eax = open(*(char **) arg[0]);
 			break;
 		case SYS_FILESIZE: //filesize NOT YET TESTED
 //			printf("FileSize!\n");
@@ -242,12 +246,17 @@ int wait (pid_t pid){
 }
 
 int open (const char *file){
+	if (file == NULL)
+		return -1;
 	struct file *f = filesys_open(file);
-	if(!f){
-		return ERROR;
-	}
-	int fd = add_file(f);
-	return fd;
+	if(f == NULL)
+		return -1;
+	
+  	struct process_file *pf = malloc(sizeof(struct process_file));
+  	pf->file = f;
+  	pf->fd = thread_current()->fd++;
+  	list_push_back(&thread_current()->file_list, &pf->elem);
+	return pf->fd;
 }
 
 pid_t exec(const char *cmd_line){
@@ -275,6 +284,8 @@ void exit (int status){
 
 
 int user_to_kernel_ptr(const void *vaddr){
+	if (!is_user_vaddr(vaddr) || vaddr < virt_bottom)
+		return -1;
 	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
 	if(!ptr){
 		thread_exit();

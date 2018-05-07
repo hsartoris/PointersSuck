@@ -1,16 +1,39 @@
 #!/bin/bash
+PASS=0
+FAIL=0
 
-if [ "$#" -eq 1 ]; then
-	echo "Printing $1 results"
-	TEST="$1"
-	for t in build/tests/userprog/$TEST-*.result; do
-		echo $t
-		cat $t
-	done
+if [ "$#" -gt 0 ]; then
+	if [ "$#" -eq 2 ] && [ "$1" = "check" ]; then
+		echo "Checking $2 tests"
+		for t in build/tests/userprog/$2-*.result; do
+			make $t
+		done
+	else
+		echo "Printing $1 results"
+		TEST="$1"
+		for t in build/tests/userprog/$TEST-*.result; do
+			echo "/------------------"
+			echo $t
+			cat $t
+			echo "\------------------"
+			echo ""
+		done
+	fi
 else
 	for t in build/tests/userprog/*.result; do
-		echo $t
-		cat $t
+		if [ `cat $t | grep PASS | wc -l` -eq 1 ]; then
+			PASS=$(($PASS+1))
+		else
+			FAIL=$(($FAIL+1))
+			echo "/------------------"
+			echo $t
+			cat $t
+			echo "\------------------"
+			echo ""
+		fi
 	done
+fi
+if [ "$(($PASS + $FAIL))" -gt 0 ]; then
+	echo "Passed $PASS; failed $FAIL"
 fi
 

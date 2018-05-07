@@ -19,7 +19,7 @@ void ipc_init (void)
 
 int ipc_read (char* pipe, int id)
 {
-#ifdef DEBUG
+#ifdef IPCDEBUG
 	printf("ipc: attempting to read from pipe %s with id %d\n",
 			pipe, id);
 #endif
@@ -48,7 +48,7 @@ int ipc_read (char* pipe, int id)
 
 int write_accept (char* pipe, int id)
 {
-#ifdef DEBUG
+#ifdef IPCDEBUG
 	printf("ipc: attempting to accept message on pipe %s with id %d\n",
 			pipe, id);
 #endif
@@ -58,7 +58,7 @@ int write_accept (char* pipe, int id)
 		struct write* w = list_entry (e, struct write, elem);
 		if (strcmp(w->pipe, pipe) == 0 && w->id == id)
 		{
-#ifdef DEBUG
+#ifdef IPCDEBUG
 			printf("ipc: accepted message on pipe %s with id %d\n",
 					pipe, id);
 #endif
@@ -80,7 +80,7 @@ void ipc_write (char* pipe, int id, int msg)
 	w->pipe = pipe;
 	w->msg = msg;
 	list_push_back(&writes, &w->elem);
-#ifdef DEBUG
+#ifdef IPCDEBUG
 	printf("ipc: message registered on pipe %s from id %d with msg %d\n",
 			pipe, id, msg);
 #endif
@@ -89,7 +89,7 @@ void ipc_write (char* pipe, int id, int msg)
 
 void read_release (struct write* w)
 {
-#ifdef DEBUG
+#ifdef IPCDEBUG
 	printf("ipc: attempting to free message on pipe %s with id %d and msg %d\n",
 			w->pipe, w->id, w->msg);
 #endif
@@ -99,7 +99,7 @@ void read_release (struct write* w)
 		struct read* r = list_entry (e, struct read, elem);
 		if (strcmp(r->pipe, w->pipe) == 0 && r->id == w->id)
 		{
-#ifdef DEBUG
+#ifdef IPCDEBUG
 			printf("ipc: freeing message on pipe %s with id %d and msg %d\n",
 					w->pipe, w->id, w->msg);
 #endif
