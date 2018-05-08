@@ -70,12 +70,12 @@ syscall_handler (struct intr_frame *f)
 			exit(*(int*)arg[0]);
 			break;
 		case SYS_EXEC: //exec
-			if (!is_valid_pointer(f->esp + 4, 4))
+		/*	if (!is_valid_pointer(f->esp + 4, 4))
 				return -1;
 			get_arg(f, &arg[0], 1);
-			f->eax = exec(*(const char **) arg[0]);
-	
-			break;
+		//	f->eax = exec(*(const char **) arg[0]);
+			return -1;
+			break;*/
 		case SYS_WAIT: //wait
 			get_arg(f, &arg[0], 1);
 			f->eax = wait(arg[0]);
@@ -111,13 +111,14 @@ syscall_handler (struct intr_frame *f)
 			break;
 		case SYS_FILESIZE: //filesize NOT YET TESTED
 			get_arg(f, &arg[0], 1);
-			f->eax = get_file_length(arg[0]);
+			f->eax = get_file_length(*(int *)arg[0]);
 			break;
 		case SYS_READ: //read
 			get_arg(f, &arg[0], 3);
 			if(!is_valid_pointer(f->esp +4, 12)){
 				return -1;
 			}
+			arg[0] = user_to_kernel_ptr((const void *) arg[0]);
 			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
 			f->eax = read(*(int*)arg[0], *(char **) arg[1],
 				       	*(unsigned*) arg[2]);
@@ -127,7 +128,8 @@ syscall_handler (struct intr_frame *f)
 			get_arg(f, &arg[0], 3);
 			if(!is_valid_pointer(f->esp +4, 12)){
 				return -1;
-			}		
+			}
+			arg[0] = user_to_kernel_ptr((const void *) arg[0]);		
 			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
 			f->eax = write(*(int*)arg[0], *(char **) arg[1], 
 					*(unsigned*) arg[2]);
@@ -237,10 +239,10 @@ int wait (pid_t pid){
 }
 
 int open (const char *file){
-	if (file == NULL)
+	if (file == NULL || !file)
 		return -1;
 	struct file *f = filesys_open(file);
-	if(f == NULL)
+	if(f == NULL || !f)
 		return -1;
 	
   	struct process_file *pf = malloc(sizeof(struct process_file));
