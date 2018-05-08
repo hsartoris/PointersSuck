@@ -55,17 +55,10 @@ syscall_handler (struct intr_frame *f)
 	void* arg[10];	//arbitrary max
 
 
-	// some code for learning about interrupt frames
-	// hex_dump (offset, buffer, size, bool of some kind?)
-	// hopefully it works; just shut down after to avoid clutter
-	//shutdown_power_off();
-//	printf("OH HOWDY%x\n", f->esp+1);
 	int* fd;
 	struct file* this_file;
 	const void* buff;
 	unsigned* size;
-	//switch (*(int*)f->esp)
-//	printf("System call: %d\n", *call);
 	switch (*call) 
 	{
 	
@@ -79,7 +72,6 @@ syscall_handler (struct intr_frame *f)
 		case SYS_EXEC: //exec
 			if (!is_valid_pointer(f->esp + 4, 4))
 				return -1;
-			printf("HAHA Hayden u fucker\n");
 			get_arg(f, &arg[0], 1);
 			f->eax = exec(*(const char **) arg[0]);
 	
@@ -142,7 +134,6 @@ syscall_handler (struct intr_frame *f)
 			break;	
 
 		case SYS_SEEK: //seek
-//			printf("Seek!\n");
 			get_arg(f, &arg[0], 2);
 			struct file* file_entry = process_get_file(*(int*)arg[0]);
 			if (file_entry != NULL)
@@ -155,20 +146,15 @@ syscall_handler (struct intr_frame *f)
 				f->eax = -1;
 			else
 				f->eax = file_tell(file_entry);
-//			printf("Tell!\n");
 			break;
 		case SYS_CLOSE: //close
-//			printf("Close!\n");
 			break;
 		default:
 			printf("We love vim <3\n");
 	}
-	//printf ("system call %d!\n", *call);
-	//thread_exit ();
 	
 }
 
-//oh by the way, this maybe works LOL
 int get_file_length(int fd){
 	struct file *f = process_get_file(fd);
 	if(!f){
@@ -218,12 +204,7 @@ bool remove (const char *file_name){
 
 
 
-//note buffer is in intq.h
 int read (int fd, void *buffer, unsigned size){
-	/*struct file* this_file = get_file(fd);
-	int bytes_read = -1;
-	bytes_read = file_read(this_file, buffer, size);
-	return bytes_read;*/
 	if(fd == STDIN_FILENO){
 		unsigned i;
 		uint8_t* local_buffer = (uint8_t *) buffer;
@@ -238,23 +219,10 @@ int read (int fd, void *buffer, unsigned size){
                 return (int)file_read(file, buffer, size);
         }
 	return -1;
-	/*
-	struct file *f = get_file(fd);
-	if(!f){
-		return ERROR;
-	}
-	int bytes = file_read(f, buffer, size);
-	return bytes;
-	*/
 	}
 int write (int fd, const void *buffer, unsigned size){
 	if (fd == STDOUT_FILENO){
-		//printf("Fd is 1\n");
-		//printf("In Write, size is: %d\n", size);
-		//printf("In Write, buff is: %s\n", buffer);
 		putbuf(buffer, size);
-		//uint32_t* local_buffer = (uint32_t *) buffer;
-		//putbuf(local_buffer,5);
 		return size;
 	}
 	else if(process_get_file(fd) != NULL){
@@ -262,16 +230,6 @@ int write (int fd, const void *buffer, unsigned size){
 		return (int)file_write(file, buffer, size);
 	}
 	return -1;
-	/*
-	struct file *file = get_file(fd);
-	if(!file){
-		return -1;
-	}
-//	printf("before file write\n");
-	int result = file_write(file, buffer, size);
-//	printf("Nothing is here\n");
-	return result;
-	*/
 }
 
 int wait (pid_t pid){
@@ -307,12 +265,6 @@ int exec(const char *cmd_line){
 }
 
 void exit (int status){
-//	struct thread *cur = thread_current();
-//	if (thread_alive(cur->parent)){
-//		cur->cp->status = status;
-//	}
-//	printf("%s: exit(%d)\n", cur->name, status);
-//	printf("Some bullshit\n");
 	thread_current ()->status = status;
 	thread_exit();
 }
@@ -330,16 +282,6 @@ int user_to_kernel_ptr(const void *vaddr){
 }
 
 
-/*struct child_process* addd_child_process (int pid){
-	struct child_process* cp = malloc(sizeof(struct child_process));
-	cp->pid = pid;
-	cp->load = NOT_LOADED;
-	cp->wait = false;
-	cp->exit = false;
-	lock_init(&cp->wait_lock);
-	list_push_back(&thread_current()->child_list, &cp->elem);
-	return cp;
-}*/
 
 struct child_process* get_child_process (int pid){
 	struct thread *t = thread_current();
@@ -433,19 +375,10 @@ void check_valid_buffer(void* buffer, unsigned size){
 }
 
 void get_arg (struct intr_frame *f, int *arg, int n){
-	// The arguments stored on the stack aren't necessarily
-	// integers. We don't know in this function; just return
-	// pointers. - Hayden
 	int i, *ptr;
 	int wlen = sizeof(void*);
-//	printf("esp=%08"PRIx32"\n", f->esp);
 	for(i = 0; i < n; i++) {
-//		printf("current arg address: %08"PRIx32"\n", 
-//			f->esp+((i+1) * wlen));
-		//ptr = f->esp + (i * sizeof(void*));
-		//arg[i] = *ptr;
 		arg[i] = f->esp + ((i+1) * wlen);
-		//printf("Arg[%d] is: %d\n", i, arg[i]);
 	}
 
 }
@@ -475,7 +408,6 @@ void process_close_file (int fd)
 }
 
 /**************************************************************************
- *Grabbed these boys off some assembly site ??
  
  *cr2: control register
  *error: error, you fool
