@@ -129,7 +129,7 @@ syscall_handler (struct intr_frame *f)
 			if(!is_valid_pointer(f->esp +4, 12)){
 				return -1;
 			}
-			arg[0] = user_to_kernel_ptr((const void *) arg[0]);		
+			arg[0] = user_to_kernel_ptr((const void *) arg[0]);	
 			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
 			f->eax = write(*(int*)arg[0], *(char **) arg[1], 
 					*(unsigned*) arg[2]);
@@ -276,7 +276,8 @@ int user_to_kernel_ptr(const void *vaddr){
 	if (!is_user_vaddr(vaddr) || vaddr < virt_bottom)
 		return -1;
 	if (vaddr > PHYS_BASE)
-		exit(-1);
+		return -1;
+		//exit(-1);
 	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
 	if(ptr == NULL)
 		return -1;
