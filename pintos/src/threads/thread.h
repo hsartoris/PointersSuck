@@ -150,6 +150,6 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 struct child_process* addd_child_process (int pid);
-
+bool thread_alive (int pid);
 
 #endif /* threads/thread.h */

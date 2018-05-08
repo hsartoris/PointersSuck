@@ -636,3 +636,4 @@ struct child_process* addd_child_process (int pid){
         list_push_back(&thread_current()->child_list, &cp->elem);
         return cp;
 }
+

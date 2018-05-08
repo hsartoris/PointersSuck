@@ -85,7 +85,7 @@ syscall_handler (struct intr_frame *f)
 			
 			if (!is_valid_pointer(f->esp + 4, 4))
 				return -1;
-
+			printf("HAHA Hayden u fucker\n");
 			get_arg(f, &arg[0], 1);
 			f->eax = exec((const char *) arg[0]);
 	
@@ -317,7 +317,7 @@ int exec(const char *cmd_line){
 	int pid = process_execute(cmd_line);
 	struct child_process* cp = get_child_process(pid);
 	ASSERT(cp);
-	return pid;
+	//return pid;
 	while (cp->load == NOT_LOADED){
 		barrier();
 	}
@@ -469,6 +469,30 @@ void get_arg (struct intr_frame *f, int *arg, int n){
 		//printf("Arg[%d] is: %d\n", i, arg[i]);
 	}
 
+}
+
+
+void process_close_file (int fd)
+{
+  struct thread *t = thread_current();
+  struct list_elem *next, *e = list_begin(&t->file_list);
+
+  while (e != list_end (&t->file_list))
+    {
+      next = list_next(e);
+      struct process_file *pf = list_entry (e, struct process_file, elem);
+      if (fd == pf->fd || fd == CLOSE_ALL)
+	{
+	  file_close(pf->file);
+	  list_remove(&pf->elem);
+	  free(pf);
+	  if (fd != CLOSE_ALL)
+	    {
+	      return;
+	    }
+	}
+      e = next;
+    }
 }
 
 /**************************************************************************

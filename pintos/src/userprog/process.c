@@ -88,15 +88,6 @@ start_process (void *file_name_)
 	if_.eflags = FLAG_IF | FLAG_MBS;
 	success = load (file_name, &if_.eip, &if_.esp);
 
-/*	if(success){
-		thread_current()->cp->load = LOAD_SUCCESS;
-	}
-	else
-	{
-		thread_current()->cp->load = LOAD_FAIL;
-	}	*/
-
-
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success) 
@@ -553,7 +544,7 @@ setup_stack (void **esp)
 			
 			// THIS IS WHAT THE FUNCTION DECLARATION LOOKS LIKE
 			// hex_dump(intptr_t offset, const void *buf_, size_t size, bool ascii)
-		//	hex_dump((uintptr_t *) *esp, (const void *) *esp, (int)(PHYS_BASE - *esp), true);
+			hex_dump((uintptr_t *) *esp, (const void *) *esp, (int)(PHYS_BASE - *esp), true);
 			// *esp = PHYS_BASE - 12;
 		} else{
 			palloc_free_page (kpage);
