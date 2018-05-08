@@ -63,8 +63,10 @@ process_execute (const char *file_name)
 		i++;
 	}
 
+
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (args[0], PRI_DEFAULT+1, start_process, fn_copy);
+	
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy); 
 	return tid;
@@ -503,7 +505,7 @@ setup_stack (void **esp)
 	int i;
 	void *offset = PHYS_BASE;
 	char* fname = args[0];
-
+	
 	//printf("Begin setting up stack\n");
 	kpage = palloc_get_page (PAL_USER | PAL_ZERO);
 	if (kpage != NULL) 
