@@ -313,10 +313,11 @@ int open (const char *file){
 	return pf->fd;
 }
 
-pid_t exec(const char *cmd_line){
-	pid_t pid = process_execute(cmd_line);
+int exec(const char *cmd_line){
+	int pid = process_execute(cmd_line);
 	struct child_process* cp = get_child_process(pid);
 	ASSERT(cp);
+	return pid;
 	while (cp->load == NOT_LOADED){
 		barrier();
 	}

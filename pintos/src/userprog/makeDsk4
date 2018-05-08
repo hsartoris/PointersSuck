@@ -1,0 +1,4 @@
+#!/bin/bash
+cd build
+pintos-mkdisk filesys.dsk --filesys-size=2
+pintos -v -k -T 10 --qemu  --filesys-size=2 -p tests/userprog/exec-once -a exec-once -p tests/userprog/child-simple -a child-simple -- -q  -f run exec-once
