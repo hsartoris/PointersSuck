@@ -70,33 +70,25 @@ syscall_handler (struct intr_frame *f)
 	{
 	
 		case SYS_HALT: //halt
-		//	printf("Halt!\n");
 			shutdown_power_off();
 			break;
 		case SYS_EXIT: //exit
-			//TODO: status
-		//	printf("Exit!\n");
-		//	thread_exit();
 			get_arg(f, &arg[0], 1);
 			exit(*(int*)arg[0]);
 			break;
 		case SYS_EXEC: //exec
-			//make bullshit high priority so the cmd to run yields the current
-			
 			if (!is_valid_pointer(f->esp + 4, 4))
 				return -1;
 
 			get_arg(f, &arg[0], 1);
-			f->eax = exec((const char *) arg[0]);
+			f->eax = exec(*(const char **) arg[0]);
 	
 			break;
 		case SYS_WAIT: //wait
-//			printf("Wait!\n");
 			get_arg(f, &arg[0], 1);
 			f->eax = wait(arg[0]);
 			break;
 		case SYS_CREATE: //create
-//			printf("Create!\n");
 			if (!is_valid_pointer(f->esp+4, 4)||
 				!is_valid_string(*(char **)(f->esp +4)) || 
 				!is_valid_pointer(f->esp+8, 4)){
@@ -107,7 +99,6 @@ syscall_handler (struct intr_frame *f)
 			return 0;
 			break;
 		case SYS_REMOVE: //remove
-//			printf("Remove\n");
 			if (!is_valid_pointer(f->esp +4, 4) ||
 				!is_valid_string(*(char **)(f->esp+4))){
 				return -1;
@@ -116,7 +107,6 @@ syscall_handler (struct intr_frame *f)
 			return 0;
 			break;
 		case SYS_OPEN: //open
-//			printf("Open!\n");
 			if (!is_valid_pointer(f->esp+4,4))
 				return -1;
 			get_arg(f, &arg[0], 1);
@@ -128,28 +118,17 @@ syscall_handler (struct intr_frame *f)
 			f->eax = open(*(char **) arg[0]);
 			break;
 		case SYS_FILESIZE: //filesize NOT YET TESTED
-//			printf("FileSize!\n");
-//			fd = (int*)(f->esp + 1);	//theoretically the file
-//			size = get_file_length(fd);
 			get_arg(f, &arg[0], 1);
 			f->eax = get_file_length(arg[0]);
-//			printf("%d\n", f->eax);
 			break;
 		case SYS_READ: //read
-//			printf("Read!\n");
-//			buff[1234];	//likely garbagio
-//			fd = *((int*)f->esp + 1);
-//			size = get_file_length(fd);
-//			read(fd, buff, size);
 			get_arg(f, &arg[0], 3);
 			if(!is_valid_pointer(f->esp +4, 12)){
 				return -1;
 			}
 			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
-			//arg[1] = user_to_kernel_ptr((const void *) arg[1]);
 			f->eax = read(*(int*)arg[0], *(char **) arg[1],
 				       	*(unsigned*) arg[2]);
-//			printf("end of read %s\n", arg[0]);
 			break;
 	
 		case SYS_WRITE: //write
