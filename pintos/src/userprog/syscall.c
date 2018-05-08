@@ -369,7 +369,8 @@ void check_valid_buffer(void* buffer, unsigned size){
 	unsigned i;
 	char* local_buffer = (char *) buffer;
 	for(i=0; i<size; i++){
-		check_valid_ptr((const void*) local_buffer);
+		//check_valid_ptr((const void*) local_buffer);
+		user_to_kernel_ptr((const void*) local_buffer);
 		local_buffer++;
 	}
 }
