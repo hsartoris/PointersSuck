@@ -24,4 +24,6 @@ void ipc_init (void);
 int ipc_read (char* pipe, int id);
 void ipc_write (char* pipe, int id, int msg);
 
+int ipc_pipe_has_msg(char* pipe, int id);
+
 #endif

@@ -117,6 +117,7 @@ process_wait (tid_t child_tid)
 #ifdef DEBUG
 	printf("process.c: waiting on tid %d\n", child_tid);	
 #endif
+	
 	struct child_process* cp = get_child_process(child_tid);
 	if(!cp){
 		return ERROR;
@@ -135,12 +136,30 @@ process_exit (void)
 {
 	struct thread *cur = thread_current ();
 	uint32_t *pd;
-	ipc_write("wait", cur->tid, cur->status);
+
+	int exitcode = 0;
+	int hasExitCode = 0;
+   
+	if (ipc_pipe_has_msg("exit", cur->tid) == 1)
+	{
+		exitcode = ipc_read("exit", cur->tid);
+		ipc_write("exit", cur->tid, exitcode);
+		hasExitCode = 1;
+	}
+	if (hasExitCode == 1 && exitcode != cur->status)
+	{
+		ipc_write("wait", cur->tid, exitcode);
+	}
+	else
+		ipc_write("wait", cur->tid, cur->status);
 
 	if (thread_tid() == 1)
 		return;
 
-	printf("%s: exit(%d)\n", cur->name, cur->status);
+	if (hasExitCode == 1 && exitcode != cur->status)
+		printf("%s: exit(%d)\n", cur->name, exitcode);
+	else
+		printf("%s: exit(%d)\n", cur->name, cur->status);
 
 	/* Destroy the current process's page directory and switch back
 	   to the kernel-only page directory. */
@@ -359,6 +378,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
 done:
 	/* We arrive here whether the load is successful or not. */
 	file_close (file);
+	if (success) 
+	{
+		ipc_write("exec", t->tid, 1);
+	}
+	else
+	{
+		ipc_write("exec", t->tid, -1);
+		ipc_write("exit", t->tid, -1);
+	}
 	return success;
 }
 

@@ -46,6 +46,18 @@ int ipc_read (char* pipe, int id)
 	NOT_REACHED();
 }
 
+int ipc_pipe_has_msg(char* pipe, int id)
+{
+	struct list_elem *e;
+	for (e = list_begin (&writes); e != list_end (&writes); e = list_next (e))
+	{
+		struct write* w = list_entry (e, struct write, elem);
+		if (strcmp(w->pipe, pipe) == 0 && w->id == id)
+			return 1;
+	}
+	return -1;
+}
+
 int write_accept (char* pipe, int id)
 {
 #ifdef IPCDEBUG

@@ -70,15 +70,14 @@ syscall_handler (struct intr_frame *f)
 			exit(*(int*)arg[0]);
 			break;
 		case SYS_EXEC: //exec
-		/*	if (!is_valid_pointer(f->esp + 4, 4))
+			if (!is_valid_pointer(f->esp + 4, 4))
 				return -1;
 			get_arg(f, &arg[0], 1);
-		//	f->eax = exec(*(const char **) arg[0]);
-			return -1;
-			break;*/
+			f->eax = exec(*(const char **) arg[0]);
+			break;
 		case SYS_WAIT: //wait
 			get_arg(f, &arg[0], 1);
-			f->eax = wait(arg[0]);
+			f->eax = wait(*(int*)arg[0]);
 			break;
 		case SYS_CREATE: //create
 			if (!is_valid_pointer(f->esp+4, 4)||
@@ -234,8 +233,8 @@ int write (int fd, const void *buffer, unsigned size){
 	return -1;
 }
 
-int wait (pid_t pid){
-	return process_wait(pid);
+int wait (tid_t tid){
+	return process_wait(tid);
 }
 
 int open (const char *file){
@@ -256,7 +255,11 @@ int exec(const char *cmd_line){
 	int pid = process_execute(cmd_line);
 	struct child_process* cp = get_child_process(pid);
 	ASSERT(cp);
-	//return pid;
+	int success = ipc_read("exec", pid);
+	if (success == 1)
+		return pid;
+	else
+		return -1;
 	while (cp->load == NOT_LOADED){
 		barrier();
 	}
@@ -267,7 +270,8 @@ int exec(const char *cmd_line){
 }
 
 void exit (int status){
-	thread_current ()->status = status;
+	ipc_write("exit", thread_current ()->tid, status);
+	//thread_current ()->status = status;
 	thread_exit();
 }
 
