@@ -116,6 +116,7 @@ void read_release (struct write* w)
 					w->pipe, w->id, w->msg);
 #endif
 			sema_up(&r->read_sema);
+			return;
 		}
 	}
 }

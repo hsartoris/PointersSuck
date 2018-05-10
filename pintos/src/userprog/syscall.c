@@ -28,17 +28,17 @@ void get_arg (struct intr_frame *f, int *arg, int n);
 int open (const char *file);
 int user_to_kernel_ptr (const void *vaddr);
 int write (int fd, const void *buffer, unsigned size);
-void check_valid_ptr (const void *vaddr);
-void check_valid_buffer (void* buffer, unsigned size);
+void check_valid_ptr (void *vaddr);
+void check_valid_buffer (char* buffer, unsigned size);
 int add_file (struct file *f);
 struct file* process_get_file (int fd);
 static bool is_valid_string(void * str);
 
 
 struct process_file {
-  struct file *file;
-  int fd;
-  struct list_elem elem;
+	struct file *file;
+	int fd;
+	struct list_elem elem;
 };
 
 	void
@@ -51,7 +51,7 @@ syscall_init (void)
 syscall_handler (struct intr_frame *f) 
 {
 	int* call = (int*)f->esp;
-	
+
 	void* arg[10];	//arbitrary max
 
 
@@ -61,7 +61,7 @@ syscall_handler (struct intr_frame *f)
 	unsigned* size;
 	switch (*call) 
 	{
-	
+
 		case SYS_HALT: //halt
 			shutdown_power_off();
 			break;
@@ -81,8 +81,8 @@ syscall_handler (struct intr_frame *f)
 			break;
 		case SYS_CREATE: //create
 			if (!is_valid_pointer(f->esp+4, 4)||
-				!is_valid_string(*(char **)(f->esp +4)) || 
-				!is_valid_pointer(f->esp+8, 4)){
+					!is_valid_string(*(char **)(f->esp +4)) || 
+					!is_valid_pointer(f->esp+8, 4)){
 				return -1;
 			}
 			get_arg(f, &arg[0], 3);
@@ -91,7 +91,7 @@ syscall_handler (struct intr_frame *f)
 			break;
 		case SYS_REMOVE: //remove
 			if (!is_valid_pointer(f->esp +4, 4) ||
-				!is_valid_string(*(char **)(f->esp+4))){
+					!is_valid_string(*(char **)(f->esp+4))){
 				return -1;
 			}
 			f->eax = remove(*(char **)(f->esp + 4));
@@ -101,7 +101,7 @@ syscall_handler (struct intr_frame *f)
 			if (!is_valid_pointer(f->esp+4,4))
 				return -1;
 			get_arg(f, &arg[0], 1);
-			arg[0] = user_to_kernel_ptr((const void *) arg[0]);
+			arg[0] = user_to_kernel_ptr((void *) arg[0]);
 			if (arg[0] == -1) {
 				f->eax = -1;
 				break;
@@ -117,19 +117,19 @@ syscall_handler (struct intr_frame *f)
 			if(!is_valid_pointer(f->esp +4, 12)){
 				return -1;
 			}
-			arg[0] = user_to_kernel_ptr((const void *) arg[0]);
-			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
+			arg[0] = user_to_kernel_ptr((void *) arg[0]);
+			check_valid_buffer(*(char **) arg[1], *(unsigned*) arg[2]);
 			f->eax = read(*(int*)arg[0], *(char **) arg[1],
-				       	*(unsigned*) arg[2]);
+					*(unsigned*) arg[2]);
 			break;
-	
+
 		case SYS_WRITE: //write
 			get_arg(f, &arg[0], 3);
 			if(!is_valid_pointer(f->esp +4, 12)){
 				return -1;
 			}
-			arg[0] = user_to_kernel_ptr((const void *) arg[0]);	
-			check_valid_buffer((void *) arg[1], *(unsigned*) arg[2]);
+			arg[0] = user_to_kernel_ptr((void *) arg[0]);	
+			check_valid_buffer(*(char **) arg[1], *(unsigned*) arg[2]);
 			f->eax = write(*(int*)arg[0], *(char **) arg[1], 
 					*(unsigned*) arg[2]);
 			break;	
@@ -153,7 +153,7 @@ syscall_handler (struct intr_frame *f)
 		default:
 			printf("We love vim <3\n");
 	}
-	
+
 }
 
 int get_file_length(int fd){
@@ -170,29 +170,29 @@ struct file * get_file(int fd){
 }
 
 int add_file (struct file *f){
-  struct process_file *pf = malloc(sizeof(struct process_file));
-  pf->file = f;
-  pf->fd = thread_current()->fd;
-  thread_current()->fd++;
-  list_push_back(&thread_current()->file_list, &pf->elem);
-  return pf->fd;
+	struct process_file *pf = malloc(sizeof(struct process_file));
+	pf->file = f;
+	pf->fd = thread_current()->fd;
+	thread_current()->fd++;
+	list_push_back(&thread_current()->file_list, &pf->elem);
+	return pf->fd;
 }
 
 struct file* process_get_file (int fd)
 {
-  struct thread *t = thread_current();
-  struct list_elem *e;
+	struct thread *t = thread_current();
+	struct list_elem *e;
 
-  for (e = list_begin (&t->file_list); e != list_end (&t->file_list);
-       e = list_next (e))
-        {
-          struct process_file *pf = list_entry (e, struct process_file, elem);
-          if (fd == pf->fd)
-	    {
-	      return pf->file;
-	    }
-        }
-  return NULL;
+	for (e = list_begin (&t->file_list); e != list_end (&t->file_list);
+			e = list_next (e))
+	{
+		struct process_file *pf = list_entry (e, struct process_file, elem);
+		if (fd == pf->fd)
+		{
+			return pf->file;
+		}
+	}
+	return NULL;
 }
 
 bool create (const char *file_name, unsigned start_size){
@@ -212,15 +212,15 @@ int read (int fd, void *buffer, unsigned size){
 		for(i=0; i<size; i++){
 			local_buffer[i] = input_getc();
 		}
-		
+
 		return size;
 	}
 	else if(process_get_file(fd) != NULL){
-                struct file *file = process_get_file(fd);
-                return (int)file_read(file, buffer, size);
-        }
-	return -1;
+		struct file *file = process_get_file(fd);
+		return (int)file_read(file, buffer, size);
 	}
+	return -1;
+}
 int write (int fd, const void *buffer, unsigned size){
 	if (fd == STDOUT_FILENO){
 		putbuf(buffer, size);
@@ -243,30 +243,23 @@ int open (const char *file){
 	struct file *f = filesys_open(file);
 	if(f == NULL || !f)
 		return -1;
-	
-  	struct process_file *pf = malloc(sizeof(struct process_file));
-  	pf->file = f;
-  	pf->fd = thread_current()->fd++;
-  	list_push_back(&thread_current()->file_list, &pf->elem);
+
+	struct process_file *pf = malloc(sizeof(struct process_file));
+	pf->file = f;
+	pf->fd = thread_current()->fd++;
+	list_push_back(&thread_current()->file_list, &pf->elem);
 	return pf->fd;
 }
 
 int exec(const char *cmd_line){
-	int pid = process_execute(cmd_line);
-	struct child_process* cp = get_child_process(pid);
-	ASSERT(cp);
-	int success = ipc_read("exec", pid);
+	int tid = process_execute(cmd_line);
+	//struct child_process* cp = get_child_process(tid);
+	//ASSERT(cp);
+	int success = ipc_read("exec", tid);
 	if (success == 1)
-		return pid;
+		return tid;
 	else
 		return -1;
-	while (cp->load == NOT_LOADED){
-		barrier();
-	}
-	if(cp->load == LOAD_FAIL){
-		return ERROR;
-	}
-	return pid;
 }
 
 void exit (int status){
@@ -281,7 +274,7 @@ int user_to_kernel_ptr(const void *vaddr){
 		return -1;
 	if (vaddr > PHYS_BASE)
 		return -1;
-		//exit(-1);
+	//exit(-1);
 	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
 	if(ptr == NULL)
 		return -1;
@@ -320,7 +313,7 @@ void remove_child_processes(void){
 		free(cp);
 		e = next;
 	}
-		
+
 }
 
 static int get_user (const uint8_t* uaddr)
@@ -331,15 +324,15 @@ static int get_user (const uint8_t* uaddr)
 	return result;
 }
 
-static bool
+	static bool
 put_user (uint8_t *udst, uint8_t byte)
 {
-  if(!is_user_vaddr(udst))
-    return false;
-  int error_code;
-  asm ("movl $1f, %0; movb %b2, %1; 1:"
-       : "=&a" (error_code), "=m" (*udst) : "q" (byte));
-  return error_code != -1;
+	if(!is_user_vaddr(udst))
+		return false;
+	int error_code;
+	asm ("movl $1f, %0; movb %b2, %1; 1:"
+			: "=&a" (error_code), "=m" (*udst) : "q" (byte));
+	return error_code != -1;
 }
 
 int is_valid_pointer(void* esp, uint8_t argc)
@@ -357,24 +350,24 @@ int is_valid_pointer(void* esp, uint8_t argc)
 
 static bool is_valid_string(void * str)
 {
-  int ch=-1;
-  while((ch=get_user((uint8_t*)str++))!='\0' && ch!=-1);
-    if(ch=='\0')
-      return true;
-    else
-      return false;
+	int ch=-1;
+	while((ch=get_user((uint8_t*)str++))!='\0' && ch!=-1);
+	if(ch=='\0')
+		return true;
+	else
+		return false;
 }
 
 
-void check_valid_ptr(const void *vaddr){
+void check_valid_ptr(void *vaddr){
 	if (!is_user_vaddr(vaddr) || vaddr < virt_bottom){
 		exit(ERROR);
 	}
 }
 
-void check_valid_buffer(void* buffer, unsigned size){
+void check_valid_buffer(char* buffer, unsigned size){
 	unsigned i;
-	char* local_buffer = (char *) buffer;
+	char* local_buffer = buffer;
 	for(i=0; i<size; i++){
 		//check_valid_ptr((const void*) local_buffer);
 		user_to_kernel_ptr((const void*) local_buffer);
@@ -394,29 +387,29 @@ void get_arg (struct intr_frame *f, int *arg, int n){
 
 void process_close_file (int fd)
 {
-  struct thread *t = thread_current();
-  struct list_elem *next, *e = list_begin(&t->file_list);
+	struct thread *t = thread_current();
+	struct list_elem *next, *e = list_begin(&t->file_list);
 
-  while (e != list_end (&t->file_list))
-    {
-      next = list_next(e);
-      struct process_file *pf = list_entry (e, struct process_file, elem);
-      if (fd == pf->fd || fd == CLOSE_ALL)
+	while (e != list_end (&t->file_list))
 	{
-	  file_close(pf->file);
-	  list_remove(&pf->elem);
-	  free(pf);
-	  if (fd != CLOSE_ALL)
-	    {
-	      return;
-	    }
+		next = list_next(e);
+		struct process_file *pf = list_entry (e, struct process_file, elem);
+		if (fd == pf->fd || fd == CLOSE_ALL)
+		{
+			file_close(pf->file);
+			list_remove(&pf->elem);
+			free(pf);
+			if (fd != CLOSE_ALL)
+			{
+				return;
+			}
+		}
+		e = next;
 	}
-      e = next;
-    }
 }
 
 /**************************************************************************
- 
+
  *cr2: control register
  *error: error, you fool
  *e$a-d$x: general purpose register
@@ -425,8 +418,8 @@ void process_close_file (int fd)
  *ebp: access data on the stack
  *cs: code segment register, added to address during instruction "fetch"
  *ds: data segment register: added to address when accessing a memory operand
-      that is not on the stack
+ that is not on the stack
  *es: extra segment register, also used in special instructions that span
-      segments (ala: string copies)
+ segments (ala: string copies)
  *ss: stack segment, added to address during stack access
  */

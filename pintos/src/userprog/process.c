@@ -140,10 +140,11 @@ process_exit (void)
 	int exitcode = 0;
 	int hasExitCode = 0;
    
-	if (ipc_pipe_has_msg("exit", cur->tid) == 1)
+	// this should never need a while loop
+	while (ipc_pipe_has_msg("exit", cur->tid) == 1)
 	{
 		exitcode = ipc_read("exit", cur->tid);
-		ipc_write("exit", cur->tid, exitcode);
+		//ipc_write("exit", cur->tid, exitcode);
 		hasExitCode = 1;
 	}
 	if (hasExitCode == 1 && exitcode != cur->status)
